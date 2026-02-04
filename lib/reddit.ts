@@ -9,6 +9,8 @@ interface RedditStats {
   subscribers: number
   contributions: number
   goldEarned: number
+  activeIn?: number // Количество активных сообществ (опционально, так как не всегда доступно из API)
+  avatarUrl?: string // URL аватара (опционально)
 }
 
 export async function getRedditStats(
@@ -474,6 +476,5 @@ export async function getRedditStatsWithToken(
     return await getRedditStats(redditUrl, username)
   }
 }
-
 
 
