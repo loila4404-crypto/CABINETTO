@@ -693,24 +693,35 @@ export async function POST(request: NextRequest) {
       // Если upsert не сработал (старая схема БД), используем старый метод
       console.warn('⚠️ Upsert не сработал, используем старый метод:', error.message)
       
-      if (existingAccountFull) {
+      // Находим аккаунт заново, так как existingAccountFull может быть null после предыдущей проверки
+      const fallbackAccount = await prisma.redditAccount.findFirst({
+        where: {
+          userId: userId,
+          OR: [
+            { redditUrl: normalizedUrl },
+            { username: normalizedUsername },
+          ],
+        },
+      })
+      
+      if (fallbackAccount) {
         account = await prisma.redditAccount.update({
-          where: { id: existingAccountFull.id },
+          where: { id: fallbackAccount.id },
           data: {
             username,
             redditUrl: normalizedUrl,
             email,
             password,
-            redditToken: redditToken && redditToken.trim() ? redditToken.trim() : existingAccountFull.redditToken,
-            avatarUrl: stats?.avatarUrl ?? existingAccountFull.avatarUrl,
-            comments: stats?.comments ?? existingAccountFull.comments,
-            karma: stats?.karma ?? existingAccountFull.karma,
-            accountAge: stats?.accountAge ?? existingAccountFull.accountAge,
-            posts: stats?.posts ?? existingAccountFull.posts,
-            subscribers: stats?.subscribers ?? existingAccountFull.subscribers,
-            contributions: stats?.contributions ?? existingAccountFull.contributions,
-            goldEarned: stats?.goldEarned ?? existingAccountFull.goldEarned,
-            activeIn: stats?.activeIn ?? existingAccountFull.activeIn,
+            redditToken: redditToken && redditToken.trim() ? redditToken.trim() : fallbackAccount.redditToken,
+            avatarUrl: stats?.avatarUrl ?? fallbackAccount.avatarUrl,
+            comments: stats?.comments ?? fallbackAccount.comments,
+            karma: stats?.karma ?? fallbackAccount.karma,
+            accountAge: stats?.accountAge ?? fallbackAccount.accountAge,
+            posts: stats?.posts ?? fallbackAccount.posts,
+            subscribers: stats?.subscribers ?? fallbackAccount.subscribers,
+            contributions: stats?.contributions ?? fallbackAccount.contributions,
+            goldEarned: stats?.goldEarned ?? fallbackAccount.goldEarned,
+            activeIn: stats?.activeIn ?? fallbackAccount.activeIn,
           },
         })
         console.log('✅ Аккаунт обновлен:', account.id)
@@ -789,4 +800,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
